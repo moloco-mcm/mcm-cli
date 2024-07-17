@@ -1,0 +1,10 @@
+colorama~=0.4.6
+gitpython~=3.1.43
+pydantic~=2.6.3
+pygithub~=2.3.0
+python-terraform~=0.10.1
+requests~=2.31.0
+rich~=13.7.1
+shortuuid~=1.0.12
+toml~=0.10.2
+typer~=0.9.0
