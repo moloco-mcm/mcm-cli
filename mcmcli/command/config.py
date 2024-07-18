@@ -75,26 +75,20 @@ def init(profile: str = "default"):
             config = toml.load(f)
 
     print(f"Creating a profile [{profile}] ...")
-    if profile == Profile.shared.value:
-        print(f"    See here for more details: https://www.notion.so/moloco/Terraform-BQ-Script-Guide-89d43f7629ec4d2ebf3052ec14baba66?pm=c"),
-        config[profile] = {
-            "github_token": typer.prompt("Github token"),
-        }
-    else:
-        config[profile] = {
-            "platform_id":             typer.prompt("Platform ID"),
-            "admin_email":             typer.prompt("Your email address of the Campaign Manager"),
-            "admin_password":          typer.prompt("Password of the Campaign Manager"),
-            "currency":                typer.prompt("Currency in a three digit code like 'USD'", default="USD"),
-            "timezone":                typer.prompt("Timezone", default="unknown"),
-            "decision_api_hostname":   typer.prompt("Decision API hostname", default="unknown"),
-            "management_api_hostname": typer.prompt("Management API hostname", default="unknown"),
-            "event_api_hostname":      typer.prompt("Event API hostname", default="unknown"),
-            "decision_api_key":        typer.prompt("Decision API key", default="unknown"),
-            "decision_api_key_name":   typer.prompt("Friendly name of the decision API key", default="unknown"),
-            "event_api_key":           typer.prompt("Event API key", default="unknown"),
-            "event_api_key_name":      typer.prompt("Friendly name of the event API key", default="unknown"),
-        }
+    config[profile] = {
+        "platform_id":             typer.prompt("Platform ID"),
+        "admin_email":             typer.prompt("Your email address of the Campaign Manager"),
+        "admin_password":          typer.prompt("Password of the Campaign Manager"),
+        "currency":                typer.prompt("Currency in a three digit code like 'USD'", default="USD"),
+        "timezone":                typer.prompt("Timezone", default="unknown"),
+        "decision_api_hostname":   typer.prompt("Decision API hostname", default="unknown"),
+        "management_api_hostname": typer.prompt("Management API hostname", default="unknown"),
+        "event_api_hostname":      typer.prompt("Event API hostname", default="unknown"),
+        "decision_api_key":        typer.prompt("Decision API key", default="unknown"),
+        "decision_api_key_name":   typer.prompt("Friendly name of the decision API key", default="unknown"),
+        "event_api_key":           typer.prompt("Event API key", default="unknown"),
+        "event_api_key_name":      typer.prompt("Friendly name of the event API key", default="unknown"),
+    }
     print(f"The profile [{profile}] has been created.")
 
     with open(DEFAULT_CONFIG_FILE, "w") as f:
