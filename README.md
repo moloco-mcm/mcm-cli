@@ -2,7 +2,7 @@
 
 This tool is a command-line interface for the Moloco Commerce Media Platform, formerly known as the Retail Media Platform.
 
-Contact mcm-ce@moloco.com for more details.
+Please contact the Moloco representative for more details.
 
 ## How to install
 
