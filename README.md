@@ -8,23 +8,12 @@ Please contact the Moloco representative for more details.
 
 Run the command from a terminal.
 ```
-pip install mcm-cli
-```
-
-
-Or if you wan to install from the source code, run the following command.
-```
 git clone https://github.com/moloco-mcm/mcm-cli.git && pip install mcm-cli
 ```
 
 ## How to upgrade
 
 Run the command from a terminal.
-```
-pip install --upgrade mcm-cli
-```
-
-Or if you cloned the `moloco-mcm/mcm-cli` GitHub repository, run the command from a terminal.
 ```
 git -C mcm-cli pull && pip install mcm-cli
 ```
