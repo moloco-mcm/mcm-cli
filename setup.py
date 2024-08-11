@@ -19,11 +19,23 @@ from setuptools import setup, find_packages
 setup(
     name='mcm-cli',
     version='0.45',
+    description='A command-line interface for Moloco Commerde Media',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     license="Apache-2.0 license",
+    author='Moloco MCM Team',
+    author_email='mcm-help@moloco.com',
+    url='https://github.com/moloco-mcm/mcm-cli',
+    python_requires='>=3.6',
+    packages=['mcmcli', 'mcmcli.command', 'mcmcli.data'],
     entry_points={
         'console_scripts': ['mcm = mcmcli.__main__:console_entry_point'],
     },
-    packages=['mcmcli', 'mcmcli.command', 'mcmcli.data'],
+    classifiers=[
+        'Programming Language :: Python :: 3',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+    ],
     install_requires=[
         'colorama',
         'gitpython',
