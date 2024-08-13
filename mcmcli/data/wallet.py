@@ -24,7 +24,7 @@ from pydantic import BaseModel
 #         {
 #             "id": "TjNwMMlONkaMqNyn",
 #             "title": "",
-#             "ad_account_id": "side_bar_1-ME",
+#             "ad_account_id": "1234",
 #             "type": "PRE_PAYMENT",
 #             "accounts": [
 #                 {
