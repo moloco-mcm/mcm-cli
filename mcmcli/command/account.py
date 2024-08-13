@@ -76,9 +76,9 @@ def bulk_invite_ad_account_owners(
     success_count = 0
     account_creation_count = 0
     for row in csv_data:
-        account_id = row[0]
-        email_address = row[1]
-        user_name = row[2]
+        account_id = row[0].strip()
+        email_address = row[1].strip()
+        user_name = row[2].strip()
         print('.', end='', file=sys.stderr, flush=True)
 
         # Check if the ad account exists
@@ -134,8 +134,8 @@ def bulk_check_user_registrations(
 
     print('"Ad Account ID","Is Ad Account Exist","User Email","Is User Exist","User Role","User Status"')
     for row in csv_data:
-        account_id = row[0]
-        email_address = row[1]
+        account_id = row[0].strip()
+        email_address = row[1].strip()
         account = _lookup_dict(account_id, account_dictionary)
         is_account_exist = "No Account Exists" if account is None else "Account Exists"
 
