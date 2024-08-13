@@ -6,30 +6,43 @@ Please contact the Moloco representative for more details.
 
 ## How to install
 
-Run the command from a terminal.
+To install, run:
+```
+pip install mcm-cli
+```
+
+For installation from the source code, use:
 ```
 git clone https://github.com/moloco-mcm/mcm-cli.git && pip install mcm-cli
 ```
 
 ## How to upgrade
 
-Run the command from a terminal.
+To upgrade, run:
+```
+pip install --upgrade mcm-cli
+```
+
+Or, if installed from the source code:
 ```
 git -C mcm-cli pull && pip install mcm-cli
 ```
 
 ## How to uninstall
 
-Run the command from a terminal.
+To uninstall, run:
 ```
 pip uninstall mcm-cli
 ```
 
 ## How to use
-Run `$ mcm config init` to initialize the configuration. It saves the configuration to `~/.mcm/config.toml`.
+Initialize the configuration with:
+```
+mcm config init
+```
+This saves the configuration to `~/.mcm/config.toml`.
 
-Use `--help` option to learn more of each command.
-
+For more details on each command, use the `--help` option.
 ```
 $ mcm --help
 
@@ -39,9 +52,10 @@ $ mcm --help
 │ --help          Show this message and exit.                      │
 ╰──────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────╮
+│ account    Ad account management                                 │
 │ auth       Authentication management                             │
 │ config     Configurations                                        │
-│ version                                                          │
+│ version    Show the tool version                                 │
 │ wallet     Wallet management                                     │
 ╰──────────────────────────────────────────────────────────────────╯
 
