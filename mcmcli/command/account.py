@@ -220,12 +220,11 @@ class AccountCommand:
 
         user = _lookup_dict(email_address, user_dictionary)
         if user is None:
-            _msg = f"\nERROR: The ad account {account_id} exists. But we could not find the user with email {email_address}"
-            print(_msg, file=sys.stderr, flush=True)
             if not create_user:
+                _msg = f"\nERROR: The ad account {account_id} exists. But we could not find the user with email {email_address}"
+                print(_msg, file=sys.stderr, flush=True)
                 return Error(code=1, message = _msg)
 
-            print(f"\nInviting a new user {email_address}, {user_name} for the ad account {account_id}...")
             _, error, _ = self.invite_user(account_id, email_address, user_name, to_curl=False)
             return error
 
