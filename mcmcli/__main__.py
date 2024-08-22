@@ -20,6 +20,7 @@
 import mcmcli.command.account
 import mcmcli.command.auth
 import mcmcli.command.config
+import mcmcli.command.decision
 import mcmcli.command.wallet
 import mcmcli.logging
 import typer
@@ -31,11 +32,12 @@ def version():
 	"""
 	Show the tool version
 	"""
-	typer.echo(f"Version: mcm-cli v0.471")
+	typer.echo(f"Version: mcm-cli v0.49")
 
 app.add_typer(mcmcli.command.account.app, name="account", help="Ad account management")
 app.add_typer(mcmcli.command.auth.app, name="auth", help="Authentication management")
 app.add_typer(mcmcli.command.config.app, name="config", help="Configurations")
+app.add_typer(mcmcli.command.decision.app, name="decision", help="Decision command")
 app.add_typer(mcmcli.command.wallet.app, name="wallet", help="Wallet management")
 
 if __name__ == "__main__":
