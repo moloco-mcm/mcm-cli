@@ -55,6 +55,7 @@ $ mcm --help
 │ account    Ad account management                                 │
 │ auth       Authentication management                             │
 │ config     Configurations                                        │
+│ decision   Decision command                                      │
 │ version    Show the tool version                                 │
 │ wallet     Wallet management                                     │
 ╰──────────────────────────────────────────────────────────────────╯
