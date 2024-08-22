@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='mcm-cli',
-    version='0.49.0',
+    version='0.49.1',
     description='A command-line interface for Moloco Commerde Media',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
