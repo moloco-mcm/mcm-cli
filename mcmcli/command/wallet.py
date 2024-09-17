@@ -127,7 +127,7 @@ def deposit(
     credits_amount  = float(credits_amount_micro)  / float(1000000)
     pre_paid_amount = float(pre_paid_amount_micro) / float(1000000)
 
-    print(f"Deposited to the wallet. Currence balance of the ad account id {account_id} is {pre_paid_amount} for PRE_PAID and {credits_amount} for CREDITS.")
+    print(f"Funds have been deposited into the wallet. The current balance for ad account ID {account_id} is {pre_paid_amount} in PRE_PAID and {credits_amount} in CREDITS.")
     return
 
 @app.command()
@@ -178,7 +178,7 @@ def withdraw(
     credits_amount  = float(credits_amount_micro)  / float(1000000)
     pre_paid_amount = float(pre_paid_amount_micro) / float(1000000)
 
-    print(f"Withdrew the funds from to the wallet. Currence balance of the ad account id {account_id} is {pre_paid_amount} for PRE_PAID and {credits_amount} for CREDITS.")
+    print(f"Funds were withdrawn out of the wallet. The current balance of ad account ID {account_id} is {pre_paid_amount} for PRE_PAID and {credits_amount} for CREDITS.")
     return
 
 class WalletCommand:
