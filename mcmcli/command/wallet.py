@@ -52,7 +52,7 @@ def balance(
         print(f"ERROR: {error.message}")
         return
 
-    wc = WalletCommand(profile, token.token)
+    wc = WalletCommand(profile, auth, token.token)
     curl, error, wallet = wc.get_balance(account_id, to_curl)
     if to_curl:
         print(curl)
@@ -97,7 +97,7 @@ def deposit(
         print(f"ERROR: {error.message}")
         return
 
-    wc = WalletCommand(profile, token.token)
+    wc = WalletCommand(profile, auth, token.token)
 
     # Check the wallet first
     curl, error, wallet = wc.get_balance(account_id, to_curl=False)
@@ -148,7 +148,7 @@ def withdraw(
         print(f"ERROR: {error.message}")
         return
 
-    wc = WalletCommand(profile, token.token)
+    wc = WalletCommand(profile, auth, token.token)
 
     # Check the wallet first
     curl, error, wallet = wc.get_balance(account_id, to_curl=False)
@@ -182,16 +182,26 @@ def withdraw(
     return
 
 class WalletCommand:
-    def __init__(self, profile, token):
+    def __init__(
+        self,
+        profile,
+        auth_command: mcmcli.command.auth.AuthCommand,
+        token
+    ):
         self.config = mcmcli.command.config.get_config(profile)
-        mcmcli.command.config.assert_config_exists(self.config)
+        if (self.config is None):
+            print(f"ERROR: Failed to load the CLI profile", file=sys.stderr, flush=True)
+            sys.exit()
 
+        self.profile = profile
+        self.auth_command = auth_command
         self.api_base_url = f"{self.config['management_api_hostname']}/rmp/mgmt/v1/platforms/{self.config['platform_id']}"
         self.headers = {
             "accept": "application/json",
             "content-type": "application/json",
             "Authorization": f"Bearer {token}"
         }
+
 
     def get_balance(
         self,

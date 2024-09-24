@@ -17,7 +17,10 @@
 """mcm cli entry point script."""
 # mcmcli/__main__.py
 
+from typing import Optional
+
 import mcmcli.command.account
+import mcmcli.command.admin
 import mcmcli.command.auth
 import mcmcli.command.config
 import mcmcli.command.decision
@@ -32,9 +35,10 @@ def version():
 	"""
 	Show the tool version
 	"""
-	typer.echo(f"Version: mcm-cli v1.0.1")
+	typer.echo(f"Version: mcm-cli v1.1.0")
 
 app.add_typer(mcmcli.command.account.app, name="account", help="Ad account management")
+app.add_typer(mcmcli.command.admin.app, name="admin", help="Platform administration")
 app.add_typer(mcmcli.command.auth.app, name="auth", help="Authentication management")
 app.add_typer(mcmcli.command.config.app, name="config", help="Configurations")
 app.add_typer(mcmcli.command.decision.app, name="decision", help="Decision command")
