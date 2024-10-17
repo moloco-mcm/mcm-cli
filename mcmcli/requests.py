@@ -41,6 +41,15 @@ def get(url, headers):
     except Exception as e:
         return e, None
 
+
+def delete(url, headers):
+    try:
+        res = requests.delete(url, headers=headers)
+        return None, json.loads(res.text)
+    except Exception as e:
+        return e, None
+
+
 def post(url, headers, payload):
     try:
         res = requests.post(url, headers=headers, json=payload)
@@ -62,6 +71,8 @@ def api_request(method, to_curl, url, headers, payload=None) -> tuple[CurlString
 
     if method == 'GET':
         error, json_obj = get(url, headers)
+    elif method == 'DELETE':
+        error, json_obj = delete(url, headers)
     elif method == 'POST':
         error, json_obj = post(url, headers, payload)
     elif method == 'PUT':

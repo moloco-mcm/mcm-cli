@@ -16,6 +16,7 @@ from enum import Enum
 from mcmcli.data.account import Account, AccountListWrapper
 from mcmcli.data.account_user import User, UserWrapper, UserListWrapper
 from mcmcli.data.error import Error
+from mcmcli.data.item import ItemList, Item
 from mcmcli.data.seller import Seller, SellerListWrapper
 from mcmcli.requests import CurlString, api_request
 from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
@@ -95,6 +96,16 @@ def bulk_invite_ad_account_owners(
                 continue
             account_creation_count += 1
 
+            #
+            # TODO: investigate if this step is necessary
+            # Activate the ad account
+            #
+            #if account:
+            #    error = a.activate_account_with_retry(account)
+            #    if error:
+            #        print(f"\nERROR: Failed to activate the ad account {account_id}. {error.message}.", file=sys.stderr, flush=True)
+            #        continue
+
         error = a.send_invitation_email_with_retry(account_id, email_address, user_name, create_user, dry_run)
         if error:
             print(f"\nERROR: Failed to send the mail for the ad account ID {account_id}. {error.message}.", file=sys.stderr, flush=True)
@@ -150,6 +161,187 @@ def bulk_check_user_registrations(
         user_status = "" if user is None else user.status
         print(f'"{account_id}","{is_account_exist}","{email_address}","{is_user_exist}","{user_role}","{user_status}"')
     return
+
+@app.command()
+def delete_user(
+    account_id: str = typer.Option(help="Ad account ID"),
+    user_email: str = typer.Option(help="User's email address"),
+    email_notification: bool = typer.Option(True, help="Send the email notification to the user"),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    Delete the email user. It will send the notification email to the user by default.
+    Please use the `--no-email-notification` option if you want to skip it.
+    """
+    a = _create_account_command(profile)
+    if a is None:
+        return
+
+    err, users = a.list_account_users(account_id)
+    if err:
+        print(f"ERROR: {err}", file=sys.stderr, flush=True)
+        sys.exit()
+    if user_email not in users:
+        print(f"ERROR: The email user {user_email} was not found in the ad account {account_id}.", file=sys.stderr, flush=True)
+        sys.exit()
+
+    user_id = users[user_email].id
+    err = a.delete_user(account_id, user_id, email_notification)
+    if err:
+        print(f"ERROR: {err}", file=sys.stderr, flush=True)
+        sys.exit()
+
+    print(f'Successfully deleted the email user {user_email} from the ad account ID {account_id}.')
+
+
+@app.command()
+def invite_user(
+    account_id: str = typer.Option(help="Ad account ID"),
+    user_email: str = typer.Option(help="User's email address"),
+    user_name: str = typer.Option(help="User's name"),
+    user_role: UserRole = typer.Option(UserRole.AD_ACCOUNT_OWNER.value, help="User Role"),
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    Invite a user as an ad account owner. The process creates the ad account if it doesn’t exist
+    and sends an invitation email to the user.
+    """
+    a = _create_account_command(profile)
+    if a is None:
+        return
+
+    #
+    # get the list of sellers
+    #
+    _, error, seller_dictionary = a.list_sellers()
+    if error:
+        print(f"ERROR: {error.message}")
+        sys.exit()
+
+    seller = _lookup_dict(account_id, seller_dictionary)
+    if seller is None:
+        print(f"ERROR: Could not find the ad account ID {account_id}")
+        sys.exit()
+
+    #
+    # create the ad account first
+    #
+    _, error, _ = a.create_account(seller.id, seller.title, to_curl=False)
+    if error and error.code != 6:
+        # error code 6 means the ad account already exists; we can ignore it.
+        print(f"ERROR: {error.message}")
+        sys.exit()
+
+    # We can assume that the ad account exists at this line, because we checked it above.
+
+    #
+    # invite the user
+    #
+    curl, error, user_join_request = a.invite_user(account_id, user_email, user_name, user_role, to_curl)
+    if to_curl:
+        print(curl)
+    elif error:
+        print(f"ERROR: {error.message}")
+        sys.exit()
+    else:
+        print(user_join_request)
+
+
+@app.command()
+def create_account(
+    account_id: str = typer.Option(help="Ad account ID"),
+    account_name: str = typer.Option(help="Ad account name"),
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    to_json: bool = typer.Option(False, help="Print raw output in json"),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    Create a new ad account.
+    """
+    a = _create_account_command(profile)
+    if a is None:
+        return
+
+    curl, error, account_info = a.create_account(account_id, account_name, to_curl)
+    if to_curl:
+        print(curl)
+        sys.exit()
+    if error:
+        print(f"ERROR: {error.message}")
+        sys.exit()
+    if account_info is None:
+        print(f"ERROR: account information is None, which is not supposed to be.")
+        sys.exit()
+
+    if to_json:
+        print(account_info.model_dump_json())
+        sys.exit()
+
+    print(f"""Ad account ID {account_info.id} ("{account_info.title}") has been created.""")
+
+
+@app.command()
+def list_accounts(
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    to_json: bool = typer.Option(False, help="Print raw output in json"),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    List all ad accounts on the platform.
+    """
+    a = _create_account_command(profile)
+    if a is None:
+        return
+
+    curl, error, accounts = a.list_accounts(to_curl)
+    if to_curl:
+        print(curl)
+        return
+    if error:
+        print(f"ERROR: {error.message}")
+        return
+    if to_json:
+        json_dumps = [x.model_dump_json() for x in accounts.values()]
+        print(f"[{','.join(json_dumps)}]")
+        return
+
+    print("Ad Account ID, State, Ad Account Title")
+    for a in accounts.values():
+        print(f"{a.id}, {a.state_info.state}, {a.title}")
+
+    return
+
+@app.command()
+def list_account_items(
+    account_id: str = typer.Option(help="Ad account ID"),
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    to_json: bool = typer.Option(False, help="Print raw output in json"),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    List all items for a given ad account.
+    """
+    a = _create_account_command(profile)
+    if a is None:
+        return
+
+    curl, error, items = a.list_account_items(account_id, to_curl)
+
+    if to_curl:
+        print(curl)
+        sys.exit()
+    if error:
+        print(f"ERROR: {error.message}")
+        sys.exit()
+    if to_json:
+        json_dumps = [x.model_dump_json() for x in items]
+        print(f"[{','.join(json_dumps)}]")
+        sys.exit()
+
+    print("Ad Account ID, Item ID, Is Active, Created At, Item Title")
+    for i in items:
+        print(f"{account_id}, {i.id}, {i.is_active}, {i.created_timestamp}, {i.title}")
 
 
 class AccountCommand:
@@ -255,6 +447,21 @@ class AccountCommand:
         return error
 
 
+    def delete_user(
+        self,
+        account_id,
+        user_id,
+        send_email_notification,
+    ) -> Optional[Error]:
+        _api_url = f"{self.api_base_url}/ad-accounts/{account_id}/users/{user_id}?reason=UserDeleted"
+        if not send_email_notification:
+            _api_url += "&bypass_notification=true"
+
+        _, error, _ = api_request('DELETE', False, _api_url, self.headers)
+
+        return error
+
+
     def invite_user(
         self,
         account_id,
@@ -284,6 +491,50 @@ class AccountCommand:
 
         ret = UserWrapper(**json_obj).user
         return None, None, ret
+
+    def activate_account(
+        self,
+        account: Account,
+        ) -> Optional[Error]:
+        account.state_info.state = "ACTIVE"
+        account.state_info.state_case = "ACTIVATED"
+
+        _api_url = f"{self.api_base_url}/ad-accounts/{account.id}"
+        _payload = {
+            "ad_account": account.model_dump_json()
+        }
+        _, error, _ = api_request('POST', False, _api_url, self.headers, _payload)
+        if error:
+            return error
+
+        _api_url = f"{self.api_base_url}/ad_accounts/{account.id}/state-info"
+        _payload = account.state_info.model_dump_json()
+        _, error, _ = api_request('POST', False, _api_url, self.headers, _payload)
+        if error:
+            return error
+
+        return None
+
+
+    
+    def activate_account_with_retry(
+        self,
+        account: Account,
+    ) -> Optional[Error]:
+        retries = 0
+        delay = 1
+        max_retries = 3
+        while retries < max_retries:
+            error = self.activate_account(account)
+            if error and error.code == 16:
+                print(f"\nERROR: authentication token expired. Retrying...", file=sys.stderr, flush=True)
+                self.refresh_token()
+                retries += 1
+                time.sleep(delay)
+                continue
+            return error
+        return Error(code=16, message="Failed to regain an authentication token")
+
 
     def create_account(
         self,
@@ -419,6 +670,88 @@ class AccountCommand:
             lambda: self.list_account_users(account_id),
         )
 
+
+    def list_account_items(
+        self,
+        account_id,
+        to_curl=False
+    ) -> tuple[
+        Optional[CurlString],
+        Optional[Error],
+        list[Item]
+    ]:
+        _api_url = f"{self.api_base_url}/ad-accounts/{account_id}/items"
+        _payload = {
+            "ad_account_id": account_id,
+            "search_keyword":[],
+            "order_by": [{
+                "column": "ID",
+                "direction": "ASC"
+            }],
+            "filter": [
+                {
+                    "column": "IS_ACTIVE",
+                    "filter_operator": "EQ",
+                    "value": "true or false",
+                }
+            ],
+            "page_index": 1,
+            "page_size": MAX_NUM_ITEMS_PER_PAGE,
+        }
+
+        #
+        # Get active items
+        #
+        curl, error, active_items = self.list_account_items_(to_curl, _api_url, self.headers, _payload, True)
+        if curl:
+            return curl, None, []
+        if error:
+            return None, error, []
+        #
+        # Get inactive items
+        #
+        _, error, inactive_items = self.list_account_items_(to_curl, _api_url, self.headers, _payload, False)
+        if error:
+            return None, error, []
+
+        return None, None, active_items + inactive_items
+
+
+    def list_account_items_(
+        self, 
+        to_curl,
+        _api_url,
+        _headers,
+        _payload,
+        _is_active
+    ) -> tuple[
+        Optional[CurlString],
+        Optional[Error],
+        list[Item]
+    ]:
+        items = []
+        num_items = 0
+        page_index = 1
+        while True:
+            _payload["page_index"] = page_index
+            _payload["filter"][0]["value"] = "true" if _is_active else "false"
+
+            curl, error, json_obj = api_request('POST', to_curl, _api_url, _headers, _payload)
+            if curl:
+                return curl, None, []
+            if error:
+                return None, error, []
+
+            item_group = ItemList(**json_obj)
+            items += item_group.rows
+            num_items += len(item_group.rows)
+
+            if num_items >= item_group.num_counts:
+                break
+            page_index += 1
+
+        return None, None, items
+    
 
 
 #
