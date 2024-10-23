@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime
 from enum import Enum
 from mcmcli.data.error import Error
-from mcmcli.data.wallet import Wallet, WalletsWrapper
+from mcmcli.data.wallet import Wallet, WalletsWrapper, PlatformWalletsWrapper
 from mcmcli.requests import CurlString, api_request
 
 import json
@@ -36,20 +37,68 @@ class OperationType(Enum):
     DEPOSIT = "deposit"
     WITHDRAW = "withdraw"
 
+def _get_wallet_balance(wallet: Wallet):
+    wa0 = wallet.accounts[0]
+    wa1 = wallet.accounts[1]
+
+    credits_amount_micro  = wa0.balance.amount_micro if wa0.type == 'CREDITS' else wa1.balance.amount_micro
+    pre_paid_amount_micro = wa0.balance.amount_micro if wa0.type == 'PRE_PAID' else wa1.balance.amount_micro
+    credit_balance = float(credits_amount_micro) / float(1000000)
+    prepaid_balance = float(pre_paid_amount_micro) / float(1000000)
+
+    return (credit_balance, prepaid_balance)
+
+
+@app.command()
+def platform_balance(
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    Get the current balances of all ad accounts in CSV format.
+    """
+    auth = mcmcli.command.auth.AuthCommand(profile)
+    curl, error, token = auth.get_token()
+    if error:
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+        return
+
+    # Get current UTC timestamp and format it as an ISO 8601 string with microseconds
+    current_timestamp = datetime.utcnow().isoformat(timespec='microseconds') + "Z"
+
+    wc = WalletCommand(profile, auth, token.token)
+    curl, error, platform_wallets = wc.get_platform_balance(to_curl)
+    if to_curl:
+        print(curl)
+        return
+    if error:
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+        return
+    if platform_wallets is None:
+        print(f"ERROR: Cannot find the wallets", file=sys.stderr, flush=True)
+        return
+
+    print("ad_account_id,credit_balance,prepaid_balance,got_balance_info_at_utc")
+    for account_id, account_data in platform_wallets.items():
+        wallet = account_data.wallets[0]
+        credit_balance, prepaid_balance = _get_wallet_balance(wallet)
+        print(f'{account_id},{credit_balance},{prepaid_balance},{current_timestamp}')
+    
+
 @app.command()
 def balance(
     account_id: str = typer.Option(help="Ad account ID"), 
     to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
     to_json: bool = typer.Option(False, help="Print raw output in json"),
-    profile: str = "default",
-    ):
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
     """
     Retrive the current balance of the given ad account's wallet.
     """
     auth = mcmcli.command.auth.AuthCommand(profile)
     curl, error, token = auth.get_token()
     if error:
-        print(f"ERROR: {error.message}")
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
         return
 
     wc = WalletCommand(profile, auth, token.token)
@@ -58,24 +107,20 @@ def balance(
         print(curl)
         return
     if error:
-        print(f"ERROR: {error.message}")
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+        return
+    if wallet is None:
+        print(f"ERROR: Wallet does not exist.", file=sys.stderr, flush=True)
         return
     if to_json:
         print(wallet.model_dump_json())
         return
     
-    wa0 = wallet.accounts[0]
-    wa1 = wallet.accounts[1]
-
-    credits_amount_micro  = wa0.balance.amount_micro if wa0.type == 'CREDITS' else wa1.balance.amount_micro
-    pre_paid_amount_micro = wa0.balance.amount_micro if wa0.type == 'PRE_PAID' else wa1.balance.amount_micro
-    credit_amount = float(credits_amount_micro) / float(1000000)
-    money_amount = float(pre_paid_amount_micro) / float(1000000)
+    credit_balance, prepaid_balance = _get_wallet_balance(wallet)
 
     print(f"Ad account ID = {account_id}")
-    print(f"Wallet ID = {wallet.id}")
-    print(f"PRE_PAID balance = {money_amount}")
-    print(f"CREDITS balance = {credit_amount}")
+    print(f"CREDITS balance = {credit_balance}")
+    print(f"PRE_PAID balance = {prepaid_balance}")
     return
 
 
@@ -86,8 +131,8 @@ def deposit(
     fund_amount: float = typer.Option(help="The fund amount to deposit"), 
     to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
     to_json: bool = typer.Option(False, help="Print raw output in json"),
-    profile: str = "default",
-    ):
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
     """
     Add or top up the money amount to the current balance of the given ad account's wallet.
     """
@@ -137,8 +182,8 @@ def withdraw(
     fund_amount: float = typer.Option(help="The amount of credit to add"), 
     to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
     to_json: bool = typer.Option(False, help="Print raw output in json"),
-    profile: str = "default",
-    ):    
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):    
     """
     Withdraws the money amount from the current balance of the given ad account's wallet.
     """
@@ -201,6 +246,25 @@ class WalletCommand:
             "content-type": "application/json",
             "Authorization": f"Bearer {token}"
         }
+
+    def get_platform_balance(
+        self,
+        to_curl: bool,
+    ) -> tuple[
+        None | CurlString,
+        None | Error,
+        None | dict[str, WalletsWrapper]
+    ]:
+        _api_url = f"{self.api_base_url}/wallets-bulk/read"
+
+        curl, error, json_obj = api_request('POST', to_curl, _api_url, self.headers)
+        if curl:
+            return curl, None, None
+        if error:
+            return None, error, None
+
+        platform_wallets_wrapper = PlatformWalletsWrapper(**json_obj)
+        return None, None, platform_wallets_wrapper.result
 
 
     def get_balance(

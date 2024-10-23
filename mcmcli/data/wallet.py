@@ -67,3 +67,46 @@ class Wallet(BaseModel):
 
 class WalletsWrapper(BaseModel):
     wallets: list[Wallet]
+
+
+#
+# API response dataclasses for the platform balance API responses
+#
+#
+# {
+#     "result": {
+#         "10054": {
+#             "wallets": [
+#                 {
+#                     "id": "wRydQ9MhQx4ZyJED", 
+#                     "title": "", 
+#                     "ad_account_id": "10054", 
+#                     "type": "PRE_PAYMENT", 
+#                     "accounts": [
+#                         {
+#                             "type": "CREDITS", 
+#                             "balance": {
+#                                 "currency": "USD", 
+#                                 "amount_micro": "1890020000"
+#                             }
+#                         },
+#                         {
+#                             "type": "PRE_PAID", 
+#                             "balance": {
+#                                 "currency": "USD", 
+#                                 "amount_micro": "0"
+#                             }
+#                         }
+#                     ], 
+#                     "created_at": "2024-09-24T17:26:09.437580Z", 
+#                     "updated_at": "2024-10-20T22:00:21.412482Z"
+#                 }
+#             ]
+#         }
+#     }
+# }
+
+class PlatformWalletsWrapper(BaseModel):
+    result: dict[str, WalletsWrapper] # Dictionary with ad_account_id as keys
+
+
