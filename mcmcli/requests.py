@@ -38,6 +38,8 @@ def get(url, headers):
     try:
         res = requests.get(url, headers=headers)
         return None, json.loads(res.text)
+    except json.JSONDecodeError:
+        return Error(code=0, message=res.text), None
     except Exception as e:
         return e, None
 
@@ -46,6 +48,8 @@ def delete(url, headers):
     try:
         res = requests.delete(url, headers=headers)
         return None, json.loads(res.text)
+    except json.JSONDecodeError:
+        return Error(code=0, message=res.text), None
     except Exception as e:
         return e, None
 
@@ -54,6 +58,8 @@ def post(url, headers, payload):
     try:
         res = requests.post(url, headers=headers, json=payload)
         return None, json.loads(res.text)
+    except json.JSONDecodeError:
+        return Error(code=0, message=res.text), None
     except Exception as e:
         return  e, None
 
@@ -61,6 +67,8 @@ def put(url, headers, payload):
     try:
         res = requests.put(url, headers=headers, json=payload)
         return None, json.loads(res.text)
+    except json.JSONDecodeError:
+        return Error(code=0, message=res.text), None
     except Exception as e:
         return e, None
 
