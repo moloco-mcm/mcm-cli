@@ -35,7 +35,7 @@ def version():
 	"""
 	Show the tool version
 	"""
-	typer.echo(f"Version: mcm-cli v1.3.1")
+	typer.echo(f"Version: mcm-cli v1.4.0")
 
 app.add_typer(mcmcli.command.account.app, name="account", help="Ad account management")
 app.add_typer(mcmcli.command.admin.app, name="admin", help="Platform administration")
