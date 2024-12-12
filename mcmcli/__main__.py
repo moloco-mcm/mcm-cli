@@ -22,8 +22,10 @@ from typing import Optional
 import mcmcli.command.account
 import mcmcli.command.admin
 import mcmcli.command.auth
+import mcmcli.command.campaign
 import mcmcli.command.config
 import mcmcli.command.decision
+import mcmcli.command.report
 import mcmcli.command.wallet
 import mcmcli.logging
 import typer
@@ -35,13 +37,15 @@ def version():
 	"""
 	Show the tool version
 	"""
-	typer.echo(f"Version: mcm-cli v1.4.0")
+	typer.echo(f"Version: mcm-cli v1.4.1")
 
 app.add_typer(mcmcli.command.account.app, name="account", help="Ad account management")
 app.add_typer(mcmcli.command.admin.app, name="admin", help="Platform administration")
 app.add_typer(mcmcli.command.auth.app, name="auth", help="Authentication management")
+app.add_typer(mcmcli.command.campaign.app, name="campaign", help="Campaign management")
 app.add_typer(mcmcli.command.config.app, name="config", help="Configurations")
 app.add_typer(mcmcli.command.decision.app, name="decision", help="Decision command")
+app.add_typer(mcmcli.command.report.app, name="report", help="Report commands")
 app.add_typer(mcmcli.command.wallet.app, name="wallet", help="Wallet management")
 
 if __name__ == "__main__":

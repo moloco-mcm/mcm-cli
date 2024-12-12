@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from enum import Enum
+from mcmcli.command.auth import AuthCommand, AuthHeaderName, AuthHeaderValue
 from mcmcli.data.account import Account, AccountListWrapper
 from mcmcli.data.account_user import User, UserWrapper, UserListWrapper
 from mcmcli.data.error import Error
@@ -348,8 +349,7 @@ class AccountCommand:
     def __init__(
         self,
         profile,
-        auth_command: mcmcli.command.auth.AuthCommand,
-        token
+        auth_command: AuthCommand,
     ):
         self.config = mcmcli.command.config.get_config(profile)
         if (self.config is None):
@@ -362,18 +362,20 @@ class AccountCommand:
         self.headers = {
             "accept": "application/json",
             "content-type": "application/json",
-            "Authorization": f"Bearer {token}"
         }
+
+        self.refresh_token()
 
 
     def refresh_token(
         self,
     ) -> None:
-        _, error, token = self.auth_command.get_token()
+        error, auth_header_name, auth_header_value = self.auth_command.get_auth_credential()
         if error:
             print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
-            return
-        self.headers["Authorization"] = f"Bearer {token.token}"
+            sys.exit()
+
+        self.headers[auth_header_name] = auth_header_value
 
 
     def retry_with_token_refresh(
@@ -760,12 +762,8 @@ class AccountCommand:
 def _create_account_command(
         profile: str
 ) -> Optional[AccountCommand]:
-    auth = mcmcli.command.auth.AuthCommand(profile)
-    _, error, token = auth.get_token()
-    if error:
-        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
-        return None
-    return AccountCommand(profile, auth, token.token)
+    auth = AuthCommand(profile)
+    return AccountCommand(profile, auth)
 
 
 def _read_csv_file(

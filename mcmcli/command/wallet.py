@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from datetime import datetime
+from mcmcli.command.auth import AuthCommand, AuthHeaderName, AuthHeaderValue
+from datetime import datetime, UTC
 from enum import Enum
 from mcmcli.data.error import Error
 from mcmcli.data.wallet import Wallet, WalletsWrapper, PlatformWalletsWrapper
@@ -48,6 +48,9 @@ def _get_wallet_balance(wallet: Wallet):
 
     return (credit_balance, prepaid_balance)
 
+def _create_wallet_command(profile):
+    auth = AuthCommand(profile)
+    return WalletCommand(profile, auth)
 
 @app.command()
 def platform_balance(
@@ -57,17 +60,11 @@ def platform_balance(
     """
     Get the current balances of all ad accounts in CSV format.
     """
-    auth = mcmcli.command.auth.AuthCommand(profile)
-    curl, error, token = auth.get_token()
-    if error:
-        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+    c = _create_wallet_command(profile)
+    if c is None:
         return
 
-    # Get current UTC timestamp and format it as an ISO 8601 string with microseconds
-    current_timestamp = datetime.utcnow().isoformat(timespec='microseconds') + "Z"
-
-    wc = WalletCommand(profile, auth, token.token)
-    curl, error, platform_wallets = wc.get_platform_balance(to_curl)
+    curl, error, platform_wallets = c.get_platform_balance(to_curl)
     if to_curl:
         print(curl)
         return
@@ -77,6 +74,9 @@ def platform_balance(
     if platform_wallets is None:
         print(f"ERROR: Cannot find the wallets", file=sys.stderr, flush=True)
         return
+
+    # Get current UTC timestamp and format it as an ISO 8601 string with microseconds
+    current_timestamp = datetime.now(UTC).isoformat(timespec='microseconds') + "Z"
 
     print("ad_account_id,credit_balance,prepaid_balance,got_balance_info_at_utc")
     for account_id, account_data in platform_wallets.items():
@@ -95,14 +95,11 @@ def balance(
     """
     Retrive the current balance of the given ad account's wallet.
     """
-    auth = mcmcli.command.auth.AuthCommand(profile)
-    curl, error, token = auth.get_token()
-    if error:
-        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+    c = _create_wallet_command(profile)
+    if c is None:
         return
 
-    wc = WalletCommand(profile, auth, token.token)
-    curl, error, wallet = wc.get_balance(account_id, to_curl)
+    curl, error, wallet = c.get_balance(account_id, to_curl)
     if to_curl:
         print(curl)
         return
@@ -136,16 +133,12 @@ def deposit(
     """
     Add or top up the money amount to the current balance of the given ad account's wallet.
     """
-    auth = mcmcli.command.auth.AuthCommand(profile)
-    curl, error, token = auth.get_token()
-    if error:
-        print(f"ERROR: {error.message}")
+    c = _create_wallet_command(profile)
+    if c is None:
         return
 
-    wc = WalletCommand(profile, auth, token.token)
-
     # Check the wallet first
-    curl, error, wallet = wc.get_balance(account_id, to_curl=False)
+    curl, error, wallet = c.get_balance(account_id, to_curl=False)
     if curl:
         print(curl)
         return
@@ -154,7 +147,7 @@ def deposit(
         return
 
     # Deposit funds
-    curl, error, wallet = wc.update_balance(OperationType.DEPOSIT, account_id, wallet.id, fund_type, fund_amount, to_curl)
+    curl, error, wallet = c.update_balance(OperationType.DEPOSIT, account_id, wallet.id, fund_type, fund_amount, to_curl)
     if curl:
         print(curl)
         return
@@ -187,16 +180,12 @@ def withdraw(
     """
     Withdraws the money amount from the current balance of the given ad account's wallet.
     """
-    auth = mcmcli.command.auth.AuthCommand(profile)
-    curl, error, token = auth.get_token()
-    if error:
-        print(f"ERROR: {error.message}")
+    c = _create_wallet_command(profile)
+    if c is None:
         return
 
-    wc = WalletCommand(profile, auth, token.token)
-
     # Check the wallet first
-    curl, error, wallet = wc.get_balance(account_id, to_curl=False)
+    curl, error, wallet = c.get_balance(account_id, to_curl=False)
     if to_curl:
         print(curl)
         return
@@ -205,7 +194,7 @@ def withdraw(
         return
 
     # Withdraw funds
-    curl, error, wallet = wc.update_balance(OperationType.WITHDRAW, account_id, wallet.id, fund_type, fund_amount, to_curl)
+    curl, error, wallet = c.update_balance(OperationType.WITHDRAW, account_id, wallet.id, fund_type, fund_amount, to_curl)
     if to_curl:
         print(curl)
         return
@@ -230,8 +219,7 @@ class WalletCommand:
     def __init__(
         self,
         profile,
-        auth_command: mcmcli.command.auth.AuthCommand,
-        token
+        auth_command: AuthCommand,
     ):
         self.config = mcmcli.command.config.get_config(profile)
         if (self.config is None):
@@ -244,8 +232,21 @@ class WalletCommand:
         self.headers = {
             "accept": "application/json",
             "content-type": "application/json",
-            "Authorization": f"Bearer {token}"
         }
+
+        self.refresh_token()
+
+
+    def refresh_token(
+        self,
+    ) -> None:
+        error, auth_header_name, auth_header_value = self.auth_command.get_auth_credential()
+        if error:
+            print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+            sys.exit()
+
+        self.headers[auth_header_name] = auth_header_value
+
 
     def get_platform_balance(
         self,

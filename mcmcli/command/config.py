@@ -88,6 +88,8 @@ def init(profile: str = "default"):
         "decision_api_key_name":   typer.prompt("Friendly name of the decision API key", default="unknown"),
         "event_api_key":           typer.prompt("Event API key", default="unknown"),
         "event_api_key_name":      typer.prompt("Friendly name of the event API key", default="unknown"),
+        "management_api_key":      typer.prompt("Management API key", default="unknown"),
+        "management_api_key_name": typer.prompt("Friendly name of the management API key", default="unknown"),
     }
     print(f"The profile [{profile}] has been created.")
 

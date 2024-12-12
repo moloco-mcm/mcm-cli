@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='mcm-cli',
-    version='1.4.0',
+    version='1.4.1',
     description='A command-line interface for Moloco Commerde Media',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -33,7 +33,7 @@ setup(
     },
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
     ],
     install_requires=[
@@ -44,9 +44,9 @@ setup(
         'python-terraform',
         'requests',
         'rich',
+        'setuptools',
         'shortuuid',
         'toml',
         'typer'
     ],
 )
-

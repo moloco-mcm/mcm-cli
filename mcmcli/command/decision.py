@@ -123,6 +123,10 @@ class DecisionCommand:
         if (self.config is None):
             print(f"ERROR: Failed to load the CLI profile", file=sys.stderr, flush=True)
             sys.exit()
+        
+        if 'decision_api_key' not in self.config or self.config['decision_api_key'] is None or self.config['decision_api_key'] == "":
+            print(f"ERROR: Decision API key is not set in the profile [{profile}]", file=sys.stderr, flush=True)
+            sys.exit()
 
         self.profile = profile
         self.api_base_url = f"{self.config['decision_api_hostname']}/rmp/decision/v1/platforms/{self.config['platform_id']}"

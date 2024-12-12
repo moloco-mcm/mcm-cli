@@ -21,6 +21,9 @@ import mcmcli.logging
 import sys
 import typer
 
+AuthHeaderName = str
+AuthHeaderValue = str
+
 app = typer.Typer(add_completion=False)
 
 #
@@ -79,4 +82,15 @@ class AuthCommand:
             return None, error, None
 
         return None, None, Token(**json_obj)
+    
+    def get_auth_credential(self) -> tuple[Error, AuthHeaderName, AuthHeaderValue]:
+        if 'management_api_key' in self.config:
+            return None, "x-api-key", self.config['management_api_key']
+
+        _, error, token = self.get_token(to_curl=False)
+        if error:
+            return error, None, None
+
+        else:
+            return None, "Authorization", f"Bearer {token.token}"
 
