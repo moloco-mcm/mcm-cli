@@ -68,7 +68,7 @@ def list_all_campaigns(
         print(error, file=sys.stderr, flush=True)
         return
 
-    print("Account IDAccount Title,Campaign ID,Campaign Title,Ad Type,Start,End,Budget Period,Budget Amount,Enabling State,State,Created At,Updated At,Item IDs")
+    print("Account ID,Account Title,Campaign ID,Campaign Title,Ad Type,Start,End,Budget Period,Budget Amount,Enabling State,State,Created At,Updated At")
     for account_campaign in account_campaigns:
         a, c = account_campaign
 
@@ -78,7 +78,8 @@ def list_all_campaigns(
         print(f'"{c.budget.period}","{int(c.budget.amount.amount_micro) / 1000000}",', end="", flush=True)
         print(f'"{c.enabling_state}","{c.state}",', end="", flush=True)
         print(f'"{c.created_at}","{c.updated_at}",', end="", flush=True)
-        print(f'"{";".join(c.catalog_item_ids)}"')
+        # print(f'"{";".join(c.catalog_item_ids)}"')
+        print("", flush=True)
 
 @app.command()
 def list_platform_users(
@@ -404,8 +405,6 @@ class AdminCommand:
         for id in accounts:
             account = accounts[id]
             echo('.')
-            if account.state_info.state == "INACTIVE":
-                continue
             # print(f'{account.id}, \"{account.title}\"')
             _, error, campaigns = cc.list_campaigns(account.id)
             if error:

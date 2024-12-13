@@ -41,6 +41,23 @@ class Goal(BaseModel):
     optimize_fixed_cpc: Optional[TargetCpc] = None
     optimize_roas: Optional[TargetRoas] = None
 
+class TargetingEvent(BaseModel):
+    event_type: str
+    matching_param: Optional[str] = None
+    negative: bool
+    matching_date: Optional[str] = None
+
+class AudienceSetting(BaseModel):
+    event_based: Optional[list[TargetingEvent]] = None
+    label: Optional[str] = None
+    event_based_include_list: Optional[list[str]] = None
+    event_based_exclude_list: Optional[list[str]] = None
+
+class Targeting(BaseModel):
+    campaign_targeting_placement_type: str
+    placement_setting: Optional[str]
+    audience_setting: Optional[AudienceSetting]
+
 class Campaign(BaseModel):
     id: str
     title: str
@@ -52,7 +69,7 @@ class Campaign(BaseModel):
     schedule: Schedule
     daily_budget: MicroPrice
     budget: Budget
-    targeting: Optional[str]
+    targeting: Optional[Targeting]
     managed_setting: Optional[str]
     text_entry: str
     goal: Goal
