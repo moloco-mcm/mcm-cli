@@ -51,7 +51,7 @@ def list_campaigns(
         print(curl)
         return
     if error:
-        print(f"ERROR: {error.message}")
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
         return
     if to_json:
         json_dumps = [x.model_dump_json() for x in campaigns]
@@ -104,6 +104,47 @@ def read_campaign(
     return
 
 @app.command()
+def archive_campaign(
+    account_id: str = typer.Option(help="Ad account ID"),
+    campaign_id: str = typer.Option(help="Campaign ID"), 
+    profile: str = typer.Option("default", help="Profile name of the MCM CLI."),
+):
+    """
+    Turn off (pause and disable) the campaign and archive it.
+    """
+    c = _create_campaign_command(profile)
+    if c is None:
+        return
+
+    _, error, campaign = c.read_campaign(account_id, campaign_id)
+    if error:
+        print(f"ERROR: Failed to read the campaign {campaign_id} of the ad account {account_id}: {error.message}", file=sys.stderr, flush=True)
+        return
+    
+    if campaign.state == 'ARCHIVED':
+        print(f"The campaign {campaign_id} of the ad account {account_id} is already archived.")
+        return
+
+    # Turn off the campaign
+    campaign.enabling_state = 'DISABLED'
+    campaign.state = 'PAUSED'
+    #campaign.daily_budget.amount_micro = (campaign.daily_budget.amount_micro // 10000) * 10000
+    _, error, campaign = c.update_campaign(campaign)
+    if error:
+        print(f"ERROR: Failed to turn off the campaign {campaign_id} of the ad account {account_id}: {error.message}", file=sys.stderr, flush=True)
+        return
+
+    # Archive the campaign
+    campaign.hidden = True
+    campaign.state = 'ARCHIVED'
+    _, error, campaign = c.update_campaign(campaign)
+    if error:
+        print(f"ERROR: Failed to archive the campaign {campaign_id} of the ad account {account_id}: {error.message}", file=sys.stderr, flush=True)
+        return
+
+    print(f"Archived the campaign {campaign_id} of the ad account {account_id}.")
+
+@app.command()
 def list_campaign_items(
     account_id: str = typer.Option(help="Ad account ID"), 
     campaign_id: str = typer.Option(help="Campaign ID"), 
@@ -124,7 +165,7 @@ def list_campaign_items(
         print(curl)
         return
     if error:
-        print(f"ERROR: {error.message}")
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
         return   
     if to_json:
         json_dumps = [x.model_dump_json() for x in items]
@@ -156,7 +197,7 @@ def add_items_to_campaign(
 
     _, error, campaign = c.read_campaign(account_id, campaign_id)
     if error:
-        print(f"ERROR: {error.message}")
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
         return
 
     #
@@ -173,7 +214,7 @@ def add_items_to_campaign(
         print(curl)
         return
     if error:
-        print(f"ERROR: {error.message}")
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
         return
     if to_json:
         print(campaign.model_dump_json())

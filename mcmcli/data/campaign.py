@@ -20,7 +20,7 @@ from typing import Optional
 #
 class MicroPrice(BaseModel):
     currency: str
-    amount_micro: str
+    amount_micro: int
 
 class Schedule(BaseModel):
     start: str
