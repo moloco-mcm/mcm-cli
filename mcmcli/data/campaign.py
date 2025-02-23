@@ -24,7 +24,7 @@ class MicroPrice(BaseModel):
 
 class Schedule(BaseModel):
     start: str
-    end: Optional[str]
+    end: Optional[str] = None
 
 class Budget(BaseModel):
     period: str
@@ -58,6 +58,56 @@ class Targeting(BaseModel):
     placement_setting: Optional[str]
     audience_setting: Optional[AudienceSetting]
 
+class TargetInventoryDimension(BaseModel):
+    width: int
+    height: int
+
+class BannerAsset(BaseModel):
+    creative_id: str
+    image_url: str
+    width: int
+    height: int
+    target_inventory_dimension: TargetInventoryDimension
+
+class LogoAsset(BaseModel):
+    creative_id: str
+    image_url: str
+
+class HeadlineAsset(BaseModel):
+    text: str
+
+class CTAAsset(BaseModel):
+    text: str
+
+class ReviewInformation(BaseModel):
+    status: str
+    rejection_reason: str
+    updated_at: str
+
+class Asset(BaseModel):
+    id: str
+    banner: BannerAsset
+    logo: LogoAsset
+    headline: HeadlineAsset
+    cta: CTAAsset
+    review_information: ReviewInformation
+    created_at: str
+    updated_at: str
+
+class CustomURLSetting(BaseModel):
+    url: str
+
+class LandPage(BaseModel):
+    type: str
+    custom_url_setting: CustomURLSetting
+    id: str
+    review_information: ReviewInformation
+    created_at: str
+    updated_at: str
+
+class ItemSelection(BaseModel):
+    type: str
+
 class Campaign(BaseModel):
     id: str
     title: str
@@ -80,6 +130,12 @@ class Campaign(BaseModel):
     updated_at: str
     audience_types: list[str]
     offsite_setting: Optional[str]
+    item_selection: Optional[ItemSelection]
+    assets: Optional[list[Asset]]
+    landing_pages: Optional[list[LandPage]]
+    landing_url_suffix: Optional[str]
+    catalog_brand_id: Optional[str]
+    catalog_category: Optional[str]
     
 class CampaignList(BaseModel):
     campaigns: list[Campaign]
