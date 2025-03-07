@@ -110,7 +110,7 @@ def update_campaign(
     target_roas: int = typer.Option(None, help='Target ROAS (%) – Applies only to campaigns with the Optimize ROAS goal type.'),
     target_cpc: float = typer.Option(None, help='Target CPC – Set in the platform currency. Applies only to campaigns with the Manual CPC goal type.'),
     budget_period: BudgetPeriod = typer.Option(None, help='Budget Period – Choose between DAILY or WEEKLY.'),
-    budget_amount: int = typer.Option(None, help='Budget Amount – Set the spending limit for the chosen period.'),
+    budget_amount: float = typer.Option(None, help='Budget Amount – Set the spending limit for the chosen period.'),
     profile: str = typer.Option("default", help="Profile Name – The MCM CLI configuration profile to use."), 
     ):
     """
@@ -147,6 +147,9 @@ def update_campaign(
         if goal and goal.get('type') != 'FIXED_CPC':
             raise typer.BadParameter(f"The campaign goal type is not FIXED_CPC and cannot update the target CPC. Ad Account ID = {account_id}, Campaign ID = {campaign_id}")
         goal['optimize_fixed_cpc']['target_cpc']['amount_micro'] = int(target_cpc * 1_000_000)
+
+    # Remove 'daily_budget' as it's unnecessary
+    c.root.pop("daily_budget", None)
 
     _, error, c = command.update_campaign(c)
     if error:
@@ -319,9 +322,6 @@ class CampaignCommand:
     def update_campaign(self, campaign: AnyCampaign, to_curl=False) -> tuple[CurlString, Error, AnyCampaign]:
         if campaign is None:
             return Error(code=0, message="invalid campaign info"), None
-
-        # Remove 'daily_budget' as it's unnecessary
-        campaign.root.pop("daily_budget", None)
 
         _api_url = f"{self.api_base_url}/ad-accounts/{campaign.root['ad_account_id']}/campaigns/{campaign.root['id']}"
         _payload = {
