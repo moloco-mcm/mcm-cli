@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, RootModel
+from typing import Any, Optional
+
+class AnyCampaign(RootModel[Any]):
+    pass
 
 #
 # API response dataclasses
