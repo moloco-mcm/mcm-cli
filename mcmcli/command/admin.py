@@ -27,8 +27,11 @@ import mcmcli.command.account
 import mcmcli.command.auth
 import mcmcli.command.campaign
 import mcmcli.command.config
+import mcmcli.command.decision
 import mcmcli.command.wallet
 import mcmcli.requests
+import random
+import requests
 import sys
 import typer
 
@@ -40,17 +43,117 @@ def _create_admin_command(profile):
     auth = AuthCommand(profile)
     return AdminCommand(profile, auth)
 
+
 @app.command()
-def list_wallet_balances(
-    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+def block_item(
+    item_id: str = typer.Option(help="Item ID"),
+    account_id: str = typer.Option(None, help="The Ad Account ID is applicable only for MSPI catalogs. If this value is provided, only the item associated with the specified seller ID will be removed from ad serving. If it is not provided, the specified item will be removed for all sellers in the MSPI catalog."),
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    profile: str = typer.Option("default", help="Profile name of the MCM CLI."),
 ):
     """
-    List the wallet balances of all of the ad accounts
+    Item Kill Switch Command.
+    This API immediately blocks an item or an ad account item from appearing in ads by marking it as `blocked`.
     """
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    # print(f"invoked block_item(item_id={item_id}, account_id={account_id}, blocked='Requested at {timestamp}')");
     admin = _create_admin_command(profile)
     if admin is None:
         return
-    admin.list_wallet_balances()
+    
+    curl, error, result = admin.block_item(item_id=item_id, account_id=account_id, to_curl=to_curl)
+    if curl:
+        print(curl)
+        return
+    if error:
+        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+        return
+    
+    print(result.model_dump_json())
+    return
+
+
+@app.command()
+def generate_sample_data(
+    ad_inventory_id: str = typer.Option(help="The ad inventory ID to use when calling the Decision API."),
+    num_iterations: int = typer.Option(100, help="How many times to call the Decision API."),
+    warn: bool = typer.Option(True, help="Shows a warning message before running. Use `--no-warn` if you want to skip the warning."),
+    profile: str = typer.Option("default", help="Profile Name – The MCM CLI configuration profile to use."), 
+):
+    """
+    Generate sample impressions and clicks. This command invokes the Decision APIs, and posts the impression
+    and click trackers to generate sample data in the platform.
+    """
+    if warn:
+        typer.confirm("This will generate sample impressions and clicks. Are you sure you want to continue?", abort=True)
+
+    # Initialize DecisionCommand
+    d = mcmcli.command.decision.DecisionCommand(profile)      
+    
+    print(f"Invoking the Decision API {num_iterations} times to generate sample impressions and clicks...", end='', flush=True)
+    thread, stopper = start_dot_printing()
+    
+    for i in range(num_iterations):
+        # Call Decision API to get trackers
+        _, error, decided_items = d.decide_items(ad_inventory_id)
+        if error:
+            print_error(f"Error calling Decision API: {error.message}")
+            continue
+            
+        if not decided_items or not decided_items.decided_items or len(decided_items.decided_items) == 0:
+            print_error("The Decision API returned an empty response.")
+            continue
+            
+        for item in decided_items.decided_items:
+            # Post impression tracker
+            for imp_url in item.imp_trackers:
+                try:
+                    requests.post(imp_url)
+                except requests.RequestException as e:
+                    print(f"[{i}] Failed to post imp tracker: {imp_url} - Error: {e}")
+            
+            # Post to click trackers with 20% probability
+            if random.random() >= 0.8:
+                continue
+            for click_url in item.click_trackers:
+                try:
+                    requests.post(click_url)
+                except requests.RequestException as e:
+                    print(f"[{i}] Failed to post imp tracker: {click_url} - Error: {e}")
+                    
+        print('.', end='', flush=True)
+        
+    stop_dot_printing(thread, stopper)
+    print("\nDone generating sample data!")
+    return
+
+
+@app.command()
+def get_platform_user(
+    user_email: str = typer.Option(help="User's email address"),
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    to_json: bool = typer.Option(False, help="Print raw output in json"),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    Get the email user's profile.
+    """
+    a = _create_admin_command(profile)
+    if a is None:
+        return
+
+    curl, error, user = a.get_platform_user(user_email, to_curl)
+    if to_curl:
+        print(curl)
+        return
+    if error:
+        print(f"ERROR: {error.message}")
+        return
+
+    if user is not None:
+        print(f"{user.model_dump_json()}")
+    return
 
 
 @app.command()
@@ -80,63 +183,6 @@ def list_all_campaigns(
         print(f'"{c.created_at}","{c.updated_at}",', end="", flush=True)
         # print(f'"{";".join(c.catalog_item_ids)}"')
         print("", flush=True)
-
-@app.command()
-def list_platform_users(
-    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
-    to_json: bool = typer.Option(False, help="Print raw output in json"),
-    profile: str = "default",
-):
-    """
-    List the users of the platform
-    """
-    admin = _create_admin_command(profile)
-    if admin is None:
-        return
-
-    curl, error, users = admin.list_platform_users(to_curl)
-    if to_curl:
-        print(curl)
-        return
-    if error:
-        print(error, file=sys.stderr, flush=True)
-        return
-    if to_json:
-        json_dumps = [x.model_dump_json() for x in users]
-        print(f"[{','.join(json_dumps)}]")
-        return
-
-    print('User ID,Created At,Updated At,Status,Email,Name,Roles')
-    for u in users:
-        roles = [f'{x.name} of {x.resource_type} {x.resource_id}' for x in u.roles]
-        print(f'{u.id},{u.created_at},{u.updated_at},{u.status},{u.email},{u.name},{';'.join(roles)}')
-
-
-@app.command()
-def get_platform_user(
-    user_email: str = typer.Option(help="User's email address"),
-    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
-    to_json: bool = typer.Option(False, help="Print raw output in json"),
-    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
-):
-    """
-    Get the email user's profile.
-    """
-    a = _create_admin_command(profile)
-    if a is None:
-        return
-
-    curl, error, user = a.get_platform_user(user_email, to_curl)
-    if to_curl:
-        print(curl)
-        return
-    if error:
-        print(f"ERROR: {error.message}")
-        return
-
-    if user is not None:
-        print(f"{user.model_dump_json()}")
-    return
 
 
 @app.command()
@@ -197,6 +243,7 @@ def list_items(
         else:
             print(f"{account_id},{i.id},{i.is_active},\"{i.title}\",,")
 
+
 @app.command()
 def list_off_campaign_items(
     account_id: str = typer.Option(help="Ad account ID"),
@@ -229,34 +276,48 @@ def list_off_campaign_items(
         if i.id not in campaign_item_obj and i.is_active:
             print(f"{i.id}, {i.title}")
 
+
 @app.command()
-def block_item(
-    item_id: str = typer.Option(help="Item ID"),
-    account_id: str = typer.Option(None, help="The Ad Account ID is applicable only for MSPI catalogs. If this value is provided, only the item associated with the specified seller ID will be removed from ad serving. If it is not provided, the specified item will be removed for all sellers in the MSPI catalog."),
+def list_platform_users(
     to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
-    profile: str = typer.Option("default", help="Profile name of the MCM CLI."),
+    to_json: bool = typer.Option(False, help="Print raw output in json"),
+    profile: str = "default",
 ):
     """
-    Item Kill Switch Command.
-    This API immediately blocks an item or an ad account item from appearing in ads by marking it as “blocked.”
+    List the users of the platform
     """
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-
-    # print(f"invoked block_item(item_id={item_id}, account_id={account_id}, blocked='Requested at {timestamp}')");
     admin = _create_admin_command(profile)
     if admin is None:
         return
-    
-    curl, error, result = admin.block_item(item_id=item_id, account_id=account_id, to_curl=to_curl)
-    if curl:
+
+    curl, error, users = admin.list_platform_users(to_curl)
+    if to_curl:
         print(curl)
         return
     if error:
-        print(f"ERROR: {error.message}", file=sys.stderr, flush=True)
+        print(error, file=sys.stderr, flush=True)
         return
-    
-    print(result.model_dump_json())
-    return
+    if to_json:
+        json_dumps = [x.model_dump_json() for x in users]
+        print(f"[{','.join(json_dumps)}]")
+        return
+
+    print('User ID,Created At,Updated At,Status,Email,Name,Roles')
+    for u in users:
+        roles = [f'{x.name} of {x.resource_type} {x.resource_id}' for x in u.roles]
+        print(f'{u.id},{u.created_at},{u.updated_at},{u.status},{u.email},{u.name},{';'.join(roles)}')
+
+@app.command()
+def list_wallet_balances(
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    List the wallet balances of all of the ad accounts
+    """
+    admin = _create_admin_command(profile)
+    if admin is None:
+        return
+    admin.list_wallet_balances()
 
 
 class AdminCommand:

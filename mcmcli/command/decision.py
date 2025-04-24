@@ -21,6 +21,7 @@ import json
 import mcmcli.command.auth
 import mcmcli.command.config
 import mcmcli.logging
+import random
 import sys
 import typer
 
@@ -139,10 +140,10 @@ class DecisionCommand:
     def decide_items(
         self, 
         inventory_id, 
-        num_items, 
-        items,
-        location_filter, 
-        to_curl,
+        num_items = 5, 
+        items = False,
+        location_filter = None, 
+        to_curl = False,
     ) -> tuple[
         Optional[CurlString],
         Optional[Error],
@@ -156,10 +157,10 @@ class DecisionCommand:
                 "num_items": num_items
             },
             "user": {
-                "user_id": "user-1"
+                "user_id": f"mcmcli-user-{random.randint(100_000, 999_999)}"
             },
             "device": {
-                "persistent_id": "persistent-device-1"
+                "persistent_id": f"mcmcli-device-{random.randint(100_000, 999_999)}"
             },
         }
         if items:
@@ -185,9 +186,9 @@ class DecisionCommand:
     def decide_creative(
         self,
         inventory_id,
-        items,
-        location_filter,
-        to_curl
+        items = False,
+        location_filter = None, 
+        to_curl = False,
     ) -> tuple[
         Optional[CurlString],
         Optional[Error],
@@ -200,10 +201,10 @@ class DecisionCommand:
                 "inventory_id": inventory_id
             },
             "user": {
-                "user_id": "user-1"
+                "user_id": f"mcmcli-user-{random.randint(100_000, 999_999)}"
             },
             "device": {
-                "persistent_id": "persistent-device-1"
+                "persistent_id": f"mcmcli-device-{random.randint(100_000, 999_999)}"
             },
         }
         if items:
@@ -229,9 +230,9 @@ class DecisionCommand:
     def decide_creative_bulk(
         self, 
         inventory_id_list, 
-        items,
-        location_filter, 
-        to_curl
+        items = False,
+        location_filter = None, 
+        to_curl = False,
     ) -> tuple[
         Optional[CurlString],
         Optional[Error], 
@@ -242,10 +243,10 @@ class DecisionCommand:
             "request_id": "request-1",
             "inventories": list(map(lambda x: { "inventory_id": x }, inventory_id_list.split(','))),
             "user": {
-                "user_id": "user-1"
+                "user_id": f"mcmcli-user-{random.randint(100_000, 999_999)}"
             },
             "device": {
-                "persistent_id": "persistent-device-1"
+                "persistent_id": f"mcmcli-device-{random.randint(100_000, 999_999)}"
             },
         }
         if items:
