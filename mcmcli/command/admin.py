@@ -86,7 +86,21 @@ def generate_sample_data(
     and click trackers to generate sample data in the platform.
     """
     if warn:
-        typer.confirm("This will generate sample impressions and clicks. Are you sure you want to continue?", abort=True)
+        typer.confirm("""⚠️ WARNING: This script is strictly for use on the TEST platform.⚠️
+Running it on any other platform may corrupt data or confuse the ML system.
+It will generate sample impressions and clicks.
+Please proceed only if you are certain.""", abort=True)
+
+    config = mcmcli.command.config.get_config(profile)
+    if (config is None):
+        print(f"ERROR: Failed to load the CLI profile", file=sys.stderr, flush=True)
+        sys.exit()
+
+    platform_id = config['platform_id']
+    if (not platform_id.endswith("_TEST")):
+        print(f"ERROR: The platform {platform_id} is not a TEST platform.", file=sys.stderr, flush=True)
+        sys.exit()
+
 
     # Initialize DecisionCommand
     d = mcmcli.command.decision.DecisionCommand(profile)      
