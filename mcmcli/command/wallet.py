@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from mcmcli.command.auth import AuthCommand, AuthHeaderName, AuthHeaderValue
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from enum import Enum
 from mcmcli.data.error import Error
 from mcmcli.data.wallet import Wallet, WalletsWrapper, PlatformWalletsWrapper
 from mcmcli.requests import CurlString, api_request
+
+UTC = timezone.utc
 
 import json
 import mcmcli.command.auth
