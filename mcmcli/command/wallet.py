@@ -17,6 +17,7 @@ from enum import Enum
 from mcmcli.data.error import Error
 from mcmcli.data.wallet import Wallet, WalletsWrapper, PlatformWalletsWrapper
 from mcmcli.requests import CurlString, api_request
+from typing import Optional
 
 UTC = timezone.utc
 
@@ -254,9 +255,9 @@ class WalletCommand:
         self,
         to_curl: bool,
     ) -> tuple[
-        None | CurlString,
-        None | Error,
-        None | dict[str, WalletsWrapper]
+        Optional[CurlString],
+        Optional[Error],
+        Optional[dict[str, WalletsWrapper]]
     ]:
         _api_url = f"{self.api_base_url}/wallets-bulk/read"
 
@@ -275,9 +276,9 @@ class WalletCommand:
         account_id: str,
         to_curl: bool,
     ) -> tuple[
-        None | CurlString,
-        None | Error,
-        None | Wallet,
+        Optional[CurlString],
+        Optional[Error],
+        Optional[Wallet],
     ]:
         _api_url = f"{self.api_base_url}/ad-accounts/{account_id}/wallets"
 
@@ -303,9 +304,9 @@ class WalletCommand:
         fund_amount: float,
         to_curl: bool,
     ) -> tuple[
-        None | CurlString,
-        None | Error,
-        None | Wallet,
+        Optional[CurlString],
+        Optional[Error],
+        Optional[Wallet],
     ]:      
         if fund_amount <= 0:
             return None, Error(code=0, message="The fund amount should be greater than zero."), None
