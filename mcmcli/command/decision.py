@@ -32,6 +32,7 @@ app = typer.Typer(add_completion=False)
 @app.command()
 def decide_items(
     inventory_id: str = typer.Option(help="Ad inventory ID"),
+    search_query: str = typer.Option(None, help="The search keyword to use when calling the Decision API."),
     num_items: int = typer.Option(help="Number of items requested for the inventory."),
     items: str = typer.Option(None, help="The main item ids of the page. For example, homepage inventories don't have any main items, and product-detail-page inventories have one main item."),
     location_filter: str = typer.Option(None, help="Location filter value"),
@@ -43,7 +44,7 @@ def decide_items(
     """
     d = DecisionCommand(profile)
 
-    curl, error, ret = d.decide_items(inventory_id, num_items, items, location_filter, to_curl)
+    curl, error, ret = d.decide_items(inventory_id, search_query, num_items, items, location_filter, to_curl)
     if to_curl:
         print(curl)
         return
@@ -140,6 +141,7 @@ class DecisionCommand:
     def decide_items(
         self, 
         inventory_id, 
+        search_query = None,
         num_items = 5, 
         items = False,
         location_filter = None, 
@@ -151,7 +153,7 @@ class DecisionCommand:
     ]:
         _api_url = f"{self.api_base_url}/auction"
         _payload = {
-            "request_id": "request-1",
+            "request_id": f"mcmcli-request-{random.randint(100_000, 999_999)}",
             "inventory": {
                 "inventory_id": inventory_id,
                 "num_items": num_items
@@ -166,6 +168,9 @@ class DecisionCommand:
         if items:
             _payload["inventory"]["items"] = items.split(',')
 
+        if search_query:
+            _payload["inventory"]["search_query"] = search_query
+        
         if location_filter:
             _payload["filtering"] = {
                 "location": {

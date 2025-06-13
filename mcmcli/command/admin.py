@@ -77,6 +77,7 @@ def block_item(
 @app.command()
 def generate_sample_data(
     ad_inventory_id: str = typer.Option(help="The ad inventory ID to use when calling the Decision API."),
+    search_query: str = typer.Option(None, help="The search keyword to use when calling the Decision API."),
     num_iterations: int = typer.Option(100, help="How many times to call the Decision API."),
     warn: bool = typer.Option(True, help="Shows a warning message before running. Use `--no-warn` if you want to skip the warning."),
     profile: str = typer.Option("default", help="Profile Name – The MCM CLI configuration profile to use."), 
@@ -110,7 +111,7 @@ Please proceed only if you are certain.""", abort=True)
     
     for i in range(num_iterations):
         # Call Decision API to get trackers
-        _, error, decided_items = d.decide_items(ad_inventory_id)
+        _, error, decided_items = d.decide_items(ad_inventory_id, search_query)
         if error:
             print_error(f"Error calling Decision API: {error.message}")
             continue
@@ -319,7 +320,7 @@ def list_platform_users(
     print('User ID,Created At,Updated At,Status,Email,Name,Roles')
     for u in users:
         roles = [f'{x.name} of {x.resource_type} {x.resource_id}' for x in u.roles]
-        print(f'{u.id},{u.created_at},{u.updated_at},{u.status},{u.email},{u.name},{';'.join(roles)}')
+        print(f'{u.id},{u.created_at},{u.updated_at},{u.status},{u.email},{u.name},{";".join(roles)}')
 
 @app.command()
 def list_wallet_balances(
