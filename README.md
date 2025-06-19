@@ -1,5 +1,7 @@
 # Moloco Commerce Media (MCM) CLI utility
 
+[![PyPI Downloads](https://static.pepy.tech/badge/mcm-cli)](https://pepy.tech/projects/mcm-cli)
+
 This tool is a command-line interface for the Moloco Commerce Media Platform, formerly known as the Retail Media Platform.
 
 Please contact the Moloco representative for more details.
