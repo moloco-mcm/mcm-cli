@@ -8,3 +8,4 @@ rich~=13.7.1
 shortuuid~=1.0.12
 toml~=0.10.2
 typer~=0.9.0
+urllib3>=2.5.0 # not directly required, pinned by Snyk to avoid a vulnerability
