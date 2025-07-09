@@ -28,6 +28,7 @@ import mcmcli.command.auth
 import mcmcli.command.campaign
 import mcmcli.command.config
 import mcmcli.command.decision
+import mcmcli.command.userevent
 import mcmcli.command.wallet
 import mcmcli.requests
 import random
@@ -83,8 +84,8 @@ def generate_sample_data(
     profile: str = typer.Option("default", help="Profile Name – The MCM CLI configuration profile to use."), 
 ):
     """
-    Generate sample impressions and clicks. This command invokes the Decision APIs, and posts the impression
-    and click trackers to generate sample data in the platform.
+    Generate sample impressions, clicks, and purchase events. This command invokes the Decision APIs, and posts the impression
+    and click trackers to generate sample data in the platform. It also posts the purchase events to the User Event API.
     """
     if warn:
         typer.confirm("""⚠️ WARNING: This script is strictly for use on the TEST platform.⚠️
@@ -105,13 +106,15 @@ Please proceed only if you are certain.""", abort=True)
 
     # Initialize DecisionCommand
     d = mcmcli.command.decision.DecisionCommand(profile)      
+    ue = mcmcli.command.userevent.UserEventCommand(profile)
     
     print(f"Invoking the Decision API {num_iterations} times to generate sample impressions and clicks...", end='', flush=True)
     thread, stopper = start_dot_printing()
     
     for i in range(num_iterations):
+        user_id = f"user-{random.randint(100_000, 999_999)}"
         # Call Decision API to get trackers
-        _, error, decided_items = d.decide_items(ad_inventory_id, search_query)
+        _, error, decided_items = d.decide_items(ad_inventory_id, user_id, search_query)
         if error:
             print_error(f"Error calling Decision API: {error.message}")
             continue
@@ -136,6 +139,11 @@ Please proceed only if you are certain.""", abort=True)
                     requests.post(click_url)
                 except requests.RequestException as e:
                     print(f"[{i}] Failed to post imp tracker: {click_url} - Error: {e}")
+
+            # Send Purchase user event with 10% probability
+            if random.random() >= 0.9:
+                continue
+            ue.insert_purchase_event(user_id, item.auction_result.ad_account_id, item.item_id, to_curl=False)
                     
         print('.', end='', flush=True)
         

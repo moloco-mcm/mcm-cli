@@ -44,7 +44,9 @@ def decide_items(
     """
     d = DecisionCommand(profile)
 
-    curl, error, ret = d.decide_items(inventory_id, search_query, num_items, items, location_filter, to_curl)
+    user_id = f"user-{random.randint(100_000, 999_999)}"
+
+    curl, error, ret = d.decide_items(inventory_id, user_id, search_query, num_items, items, location_filter, to_curl)
     if to_curl:
         print(curl)
         return
@@ -141,6 +143,7 @@ class DecisionCommand:
     def decide_items(
         self, 
         inventory_id, 
+        user_id,
         search_query = None,
         num_items = 5, 
         items = False,
@@ -159,10 +162,10 @@ class DecisionCommand:
                 "num_items": num_items
             },
             "user": {
-                "user_id": f"mcmcli-user-{random.randint(100_000, 999_999)}"
+                "user_id": user_id
             },
             "device": {
-                "persistent_id": f"mcmcli-device-{random.randint(100_000, 999_999)}"
+                "persistent_id": user_id
             },
         }
         if items:

@@ -17,7 +17,7 @@ import threading
 import time
 import typer
 
-def print_error(api_url, message):
+def print_error(message, api_url="Unknown"):
     # Something's wrong. Print error and exit.
 
     _msg = typer.style(f"\nERROR: {message}", fg=typer.colors.RED, bold=True)
