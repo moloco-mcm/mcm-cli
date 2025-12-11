@@ -66,6 +66,14 @@ class DecidedItemList(BaseModel):
     request_id: str
     decided_items: list[DecidedItem]
 
+class DecidedProducts(BaseModel):
+    inventory_id: str
+    decided_items: list[DecidedItem]
+    
+class DecidedProductsList(BaseModel):
+    request_id: str
+    decisions: list[DecidedProducts]
+
 class CreativeBanner(BaseModel):
     creative_id: str
     image_url: str

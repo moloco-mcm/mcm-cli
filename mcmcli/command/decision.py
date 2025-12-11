@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from mcmcli.data.error import Error
-from mcmcli.data.decision import DecidedCreative, DecidedCreativeBulkList, DecidedItemList
+from mcmcli.data.decision import DecidedCreative, DecidedCreativeBulkList, DecidedItemList, DecidedProductsList
 from mcmcli.requests import CurlString, api_request
 from typing import Any, Callable, Dict, Optional, Tuple, TypeVar
 
@@ -28,6 +28,37 @@ import typer
 MAX_NUM_ITEMS_PER_PAGE = 5000
 
 app = typer.Typer(add_completion=False)
+
+
+@app.command()
+def decide_products(
+    inventory_id: str = typer.Option(help="Ad inventory ID"),
+    search_query: str = typer.Option(None, help="The search keyword to use when calling the Decision API."),
+    num_ads: int = typer.Option(help="Number of product ads requested for the inventory."),
+    item_id: str = typer.Option(None, help="The contextual item information. e.g., An item being shown in a product detail page."),
+    to_curl: bool = typer.Option(False, help="Generate the curl command instead of executing it."),
+    profile: str = typer.Option("default", help="profile name of the MCM CLI."),
+):
+    """
+    Request product decision by auction. (https://mcm-docs.moloco.com/reference/rmpdecisionapi_decideadproducts)
+    """
+    d = DecisionCommand(profile)
+
+    user_id = f"user-{random.randint(100_000, 999_999)}"
+
+    curl, error, ret = d.decide_products(inventory_id, user_id, search_query, num_ads, item_id, to_curl=to_curl)
+    if to_curl:
+        print(curl)
+        return
+    if error:
+        print(f"ERROR: {error.message}")
+        return
+    if ret is None:
+        print(f"ERROR: Unknown error")
+        return
+
+    print(ret.model_dump_json())
+    return
 
 @app.command()
 def decide_items(
@@ -140,6 +171,67 @@ class DecisionCommand:
             "x-api-key": self.config['decision_api_key']
         }
     
+
+    def decide_products(
+        self,
+        inventory_id,
+        user_id,
+        search_query = None,
+        num_ads = 5,
+        item_id = None,
+        to_curl = False,
+    ) -> tuple[
+        Optional[CurlString],
+        Optional[Error],
+        # Optional[DecidedItemList],
+        Optional[DecidedProductsList],
+    ]:
+        _api_url = f"{self.api_base_url}/product-auction"
+        _payload = {
+            "request_id": f"mcmcli-request-{random.randint(100_000, 999_999)}",
+            "inventories": [{
+                "inventory_id": inventory_id,
+                "num_ads": num_ads,
+                "inventory_items": [{
+                    "item_id": None,
+                }],
+                "search_query": None,
+            }],
+            "user": {
+                "user_id": user_id
+            },
+            "device": {
+                "persistent_id": user_id
+            },
+            "deduplication_setting": {
+                "per_request": {
+                    "method": "METHOD_DEFAULT",
+                    "criteria": "CRITERIA_DEFAULT"
+                }
+            },
+        }
+
+        if item_id:
+            _payload["inventories"][0]["inventory_items"][0]["item_id"] = item_id
+
+        if search_query:
+            _payload["inventories"][0]["search_query"] = search_query
+
+
+        curl, error, json_obj = api_request('POST', to_curl, _api_url, self.headers, _payload)
+        if curl:
+            return curl, None, None
+        if error:
+            return None, error, None
+
+        # print(json_obj)
+        # sys.exit()
+
+        decided_products = DecidedProductsList(**json_obj)
+        return None, None, decided_products
+
+
+
     def decide_items(
         self, 
         inventory_id, 
